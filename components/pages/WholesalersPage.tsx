@@ -63,6 +63,8 @@ export default function WholesalersPage({ onNavigate }: WholesalersPageProps) {
   const active = wholesalers.filter((w) => w.status === 'active');
   const archived = wholesalers.filter((w) => w.status === 'archived');
 
+  
+
   return (
     <div>
       <div className="page-header">
@@ -109,7 +111,7 @@ export default function WholesalersPage({ onNavigate }: WholesalersPageProps) {
                 <th>Contact</th>
                 <th>Mobile</th>
                 <th>GSTIN</th>
-                <th style={{ textAlign: 'right' }}>Opening Bal.</th>
+                {/* <th style={{ textAlign: 'right' }}>Opening Bal.</th> */}
                 <th>Added</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -130,9 +132,9 @@ export default function WholesalersPage({ onNavigate }: WholesalersPageProps) {
                   <td>{w.contactPerson || '—'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{w.mobile}</td>
                   <td style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{w.gstin || '—'}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {/* <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                     {w.openingBalance > 0 ? formatCurrency(w.openingBalance) : '—'}
-                  </td>
+                  </td> */}
                   <td style={{ whiteSpace: 'nowrap' }}>{formatDate(w.createdAt)}</td>
                   <td>
                     <span className="badge badge-green">Active</span>
@@ -279,11 +281,11 @@ function WholesalerModal({ wholesaler, onClose, onSaved }: WholesalerModalProps)
               <textarea className="form-textarea" rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
             </div>
             <div className="form-grid">
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label className="form-label">Opening Balance (₹)</label>
                 <input className="form-input" type="number" min="0" step="0.01" value={form.openingBalance} onChange={(e) => setForm({ ...form, openingBalance: e.target.value })} />
                 <span className="form-hint">Outstanding amount owed at start</span>
-              </div>
+              </div> */}
               <div className="form-group">
                 <label className="form-label">Notes</label>
                 <input className="form-input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
@@ -313,7 +315,6 @@ export function WholesalerDetailPage({ wholesalerId, onNavigate }: WholesalerDet
   const [summary, setSummary] = useState<WholesalerSummary | null>(null);
   const [ledger, setLedger] = useState<Array<{ date: string; reference: string; type: string; description: string; debit: number; credit: number; runningBalance: number }>>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'ledger' | 'purchases' | 'returns' | 'payments'>('ledger');
   const { showToast } = useToast();
 
   useEffect(() => { fetchData(); }, [wholesalerId]);
@@ -360,6 +361,103 @@ export function WholesalerDetailPage({ wholesalerId, onNavigate }: WholesalerDet
     refund: 'badge-green',
     adjustment: 'badge-gray',
   };
+  
+
+//   const displayLedger = (() => {
+//   const paymentTotals = new Map<string, number>();
+
+//   // Calculate total payments against each purchase
+//   ledger.forEach((entry) => {
+//     if (entry.type === 'payment' && entry.reference) {
+//       paymentTotals.set(
+//         entry.reference,
+//         (paymentTotals.get(entry.reference) || 0) + entry.credit
+//       );
+//     }
+//   });
+
+//   // Remove payment entries and add payment amounts to purchases
+//   const filteredLedger = ledger
+//     .filter((entry) => entry.type !== 'payment')
+//     .map((entry) => {
+//       if (entry.type === 'purchase') {
+//         const paidAmount = paymentTotals.get(entry.reference) || 0;
+
+//         return {
+//           ...entry,
+//           credit: paidAmount,
+//         };
+//       }
+
+//       return entry;
+//     });
+
+//   // Recalculate running balance
+//   let balance = 0;
+
+//   return filteredLedger.map((entry) => {
+//     balance += entry.debit - entry.credit;
+
+//     return {
+//       ...entry,
+//       runningBalance: balance,
+//     };
+//   });
+// })();
+
+const displayLedger = (() => {
+  const purchasePayments = new Map<string, number>();
+
+  // Collect payments made at the time of purchase
+  ledger.forEach((entry) => {
+    if (
+      entry.type === 'payment' &&
+      entry.reference.endsWith('-PMT')
+    ) {
+      const purchaseReference = entry.reference.replace(/-PMT$/, '');
+
+      purchasePayments.set(
+        purchaseReference,
+        (purchasePayments.get(purchaseReference) || 0) + entry.credit
+      );
+    }
+  });
+
+  // Remove purchase-time payment rows and combine with purchases
+  const combined = ledger
+    .filter(
+      (entry) =>
+        !(entry.type === 'payment' && entry.reference.endsWith('-PMT'))
+    )
+    .map((entry) => {
+      if (entry.type === 'purchase') {
+        const paidAmount = purchasePayments.get(entry.reference) || 0;
+
+        return {
+          ...entry,
+          credit: paidAmount,
+          description:
+            paidAmount > 0
+              ? `${entry.description} (Paid: ${formatCurrency(paidAmount)})`
+              : entry.description,
+        };
+      }
+
+      return entry;
+    });
+
+  // Recalculate running balance while preserving opening balance
+  let balance = 0;
+
+  return combined.map((entry) => {
+    balance += entry.debit - entry.credit;
+
+    return {
+      ...entry,
+      runningBalance: balance,
+    };
+  });
+})();
 
   return (
     <div>
@@ -378,104 +476,68 @@ export function WholesalerDetailPage({ wholesalerId, onNavigate }: WholesalerDet
       </div>
 
       {/* Summary cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Purchases</div>
-          <div className="stat-card-value" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.totalPurchases)}</div>
+          <div className="stat-card-label">Total Debit</div>
+          <div className="stat-card-value text-debit" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.totalPurchases)}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Approved Returns</div>
-          <div className="stat-card-value" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.approvedReturns)}</div>
+          <div className="stat-card-label">Total Credit</div>
+          <div className="stat-card-value text-credit" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.approvedReturns + summary.totalPayments)}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Total Payments</div>
-          <div className="stat-card-value" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.totalPayments)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-label">Outstanding</div>
+          <div className="stat-card-label">Outstanding Balance</div>
           <div className="stat-card-value text-debit" style={{ fontSize: '1.25rem' }}>{formatCurrency(summary.outstandingPayable)}</div>
         </div>
       </div>
 
-      {/* Tab navigation */}
-      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', borderBottom: '2px solid var(--color-border)' }}>
-        {(['ledger', 'purchases', 'returns', 'payments'] as const).map((t) => (
-          <button
-            key={t}
-            className={`btn btn-ghost btn-sm`}
-            style={{
-              borderBottom: tab === t ? '2px solid var(--color-primary)' : '2px solid transparent',
-              borderRadius: 0,
-              fontWeight: tab === t ? 600 : 400,
-              color: tab === t ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-            }}
-            onClick={() => setTab(t)}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      {/* Ledger Table */}
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reference</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th style={{ textAlign: 'right' }}>Debit (₹)</th>
+              <th style={{ textAlign: 'right' }}>Credit (₹)</th>
+              <th style={{ textAlign: 'right' }}>Balance (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ledger.length === 0 ? (
+              <tr><td colSpan={7} className="empty-state" style={{ padding: '2rem' }}>No ledger entries found.</td></tr>
+            ) : (
+              // ledger.map((entry, i) => (
+              displayLedger.map((entry, i) => (
+                <tr key={i}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatDate(entry.date)}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{entry.reference}</td>
+                  <td>
+                    <span className={`badge ${txTypeBadge[entry.type] || 'badge-gray'}`}>
+                      {txTypeLabel[entry.type] || entry.type}
+                    </span>
+                  </td>
+                  <td>{entry.description}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {entry.debit > 0 ? <span className="text-debit">{formatCurrency(entry.debit)}</span> : '—'}
+                  </td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {entry.credit > 0 ? <span className="text-credit">{formatCurrency(entry.credit)}</span> : '—'}
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                    <span className={entry.runningBalance > 0 ? 'text-debit' : entry.runningBalance < 0 ? 'text-credit' : ''}>
+                      {formatCurrency(Math.abs(entry.runningBalance))}
+                      {entry.runningBalance > 0 ? ' Dr' : entry.runningBalance < 0 ? ' Cr' : ''}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-
-      {/* Ledger Tab */}
-      {tab === 'ledger' && (
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Reference</th>
-                <th>Type</th>
-                <th>Description</th>
-                <th style={{ textAlign: 'right' }}>Debit (₹)</th>
-                <th style={{ textAlign: 'right' }}>Credit (₹)</th>
-                <th style={{ textAlign: 'right' }}>Balance (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.length === 0 ? (
-                <tr><td colSpan={7} className="empty-state" style={{ padding: '2rem' }}>No ledger entries found.</td></tr>
-              ) : (
-                ledger.map((entry, i) => (
-                  <tr key={i}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(entry.date)}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{entry.reference}</td>
-                    <td>
-                      <span className={`badge ${txTypeBadge[entry.type] || 'badge-gray'}`}>
-                        {txTypeLabel[entry.type] || entry.type}
-                      </span>
-                    </td>
-                    <td>{entry.description}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {entry.debit > 0 ? <span className="text-debit">{formatCurrency(entry.debit)}</span> : '—'}
-                    </td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {entry.credit > 0 ? <span className="text-credit">{formatCurrency(entry.credit)}</span> : '—'}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                      <span className={entry.runningBalance > 0 ? 'text-debit' : entry.runningBalance < 0 ? 'text-credit' : ''}>
-                        {formatCurrency(Math.abs(entry.runningBalance))}
-                        {entry.runningBalance > 0 ? ' Dr' : entry.runningBalance < 0 ? ' Cr' : ''}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === 'purchases' && (
-        <WholesalerPurchasesTab wholesalerId={wholesalerId} />
-      )}
-
-      {tab === 'returns' && (
-        <WholesalerReturnsTab wholesalerId={wholesalerId} />
-      )}
-
-      {tab === 'payments' && (
-        <WholesalerPaymentsTab wholesalerId={wholesalerId} />
-      )}
     </div>
   );
 }

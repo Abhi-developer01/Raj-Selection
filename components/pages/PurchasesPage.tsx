@@ -117,7 +117,7 @@ export default function PurchasesPage() {
                 <th>Invoice No.</th>
                 <th>Wholesaler</th>
                 <th>Date</th>
-                <th>Items</th>
+                <th>Notes</th>
                 <th style={{ textAlign: 'right' }}>Invoice Total</th>
                 <th style={{ textAlign: 'right' }}>Paid</th>
                 <th style={{ textAlign: 'right' }}>Pending</th>
@@ -134,9 +134,10 @@ export default function PurchasesPage() {
                     <td style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8125rem' }}>{p.invoiceNumber}</td>
                     <td>{wslMap[p.wholesalerId] || p.wholesalerId}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(p.purchaseDate)}</td>
-                    <td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8125rem' }}>{p.notes || '—'}</td>
+                    {/* <td>
                       {p.items?.length ?? 0} item{(p.items?.length ?? 0) !== 1 ? 's' : ''}
-                    </td>
+                    </td> */}
                     <td style={{ textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.invoiceTotal)}</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.amountPaid)}</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -340,7 +341,7 @@ function PurchaseModal({ wholesalers, onClose, onSaved }: PurchaseModalProps) {
             {/* Charges / totals */}
             <div className="form-grid" style={{ marginTop: '0.75rem' }}>
               <div className="form-group">
-                <label className="form-label">Additional Charges (₹)</label>
+                <label className="form-label">Debit (₹)</label>
                 <input className="form-input" type="number" min="0" step="0.01" value={form.additionalCharges} onChange={(e) => setForm({ ...form, additionalCharges: e.target.value })} />
                 <span className="form-hint">Transport, loading, etc.</span>
               </div>

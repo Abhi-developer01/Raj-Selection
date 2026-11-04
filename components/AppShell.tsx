@@ -66,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'wholesalers', label: 'Wholesalers', icon: Icons.Wholesalers, section: 'Management' },
   { id: 'purchases', label: 'Purchases', icon: Icons.Purchases, section: 'Management' },
   { id: 'returns', label: 'Returns', icon: Icons.Returns, section: 'Management' },
-  { id: 'payments', label: 'Payments', icon: Icons.Payments, section: 'Management' },
+  // { id: 'payments', label: 'Payments', icon: Icons.Payments, section: 'Management' },
   { id: 'reports', label: 'Reports', icon: Icons.Reports, section: 'Analytics' },
   { id: 'setup', label: 'Setup', icon: Icons.Setup, section: 'System' },
 ];

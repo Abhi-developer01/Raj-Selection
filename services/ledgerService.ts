@@ -49,7 +49,12 @@ export async function getWholesalerSummary(wholesalerId: string): Promise<Wholes
   const approvedReturns = myReturns
     .filter((r) => APPROVED_RETURN_STATUSES.has(r.status))
     .reduce((s, r) => s + r.returnAmount, 0);
-  const totalPayments = myPayments.reduce((s, p) => s + p.amount, 0);
+
+  // Include both standalone payments and payments made at purchase time
+  const purchasePayments = myPurchases.reduce((s, p) => s + p.amountPaid, 0);
+  const standalonePayments = myPayments.reduce((s, p) => s + p.amount, 0);
+  const totalPayments = purchasePayments + standalonePayments;
+
   const totalRefunds = myRefunds.reduce((s, r) => s + r.amount, 0);
 
   // Outstanding = openingBalance + purchases - approvedReturns - payments - refunds

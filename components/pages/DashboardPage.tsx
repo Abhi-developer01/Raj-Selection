@@ -5,7 +5,7 @@ import type { DashboardStats, RecentTransaction, MonthlyDataPoint, WholesalerBal
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface DashboardPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, detail?: string) => void;
 }
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
@@ -167,13 +167,21 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                     <th style={{ textAlign: 'right' }}>Purchases</th>
                     <th style={{ textAlign: 'right' }}>Returns</th>
                     <th style={{ textAlign: 'right' }}>Payments</th>
-                    <th style={{ textAlign: 'right' }}>Outstanding Balance</th>
+                    <th style={{ textAlign: 'right' }}>Balance</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.wholesalerBalances.map((wb: WholesalerBalance, i: number) => (
                     <tr key={i}>
-                      <td style={{ fontWeight: 500 }}>{wb.wholesalerName}</td>
+                      <td>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontWeight: 600, padding: '0.25rem 0', textDecoration: 'underline', color: 'var(--color-primary)' }}
+                          onClick={() => onNavigate('wholesaler-detail', wb.wholesalerId)}
+                        >
+                          {wb.wholesalerName}
+                        </button>
+                      </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(wb.totalPurchases)}
                       </td>
